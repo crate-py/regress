@@ -1,0 +1,15 @@
+[package]
+name = "regress-py"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "regress"
+crate-type = ["cdylib"]
+
+[dependencies]
+regress = "0.5.0"
+
+[dependencies.pyo3]
+version = "0.18.1"
+features = ["abi3-py38"]
