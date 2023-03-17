@@ -1,20 +1,20 @@
-==============
-``regress.py``
-==============
+===========
+``regress``
+===========
 
 |PyPI| |Pythons| |CI|
 
-.. |PyPI| image:: https://img.shields.io/pypi/v/regress-py.svg
+.. |PyPI| image:: https://img.shields.io/pypi/v/regress.svg
   :alt: PyPI version
-  :target: https://pypi.org/project/regress-py/
+  :target: https://pypi.org/project/regress/
 
-.. |Pythons| image:: https://img.shields.io/pypi/pyversions/regress-py.svg
+.. |Pythons| image:: https://img.shields.io/pypi/pyversions/regress.svg
   :alt: Supported Python versions
-  :target: https://pypi.org/project/regress-py/
+  :target: https://pypi.org/project/regress/
 
-.. |CI| image:: https://github.com/Julian/regress.py/workflows/CI/badge.svg
+.. |CI| image:: https://github.com/Julian/regress/workflows/CI/badge.svg
   :alt: Build status
-  :target: https://github.com/Julian/regress.py/actions?query=workflow%3ACI
+  :target: https://github.com/Julian/regress/actions?query=workflow%3ACI
 
 
 Python bindings to the Rust ``regress`` crate, exposing ECMA regular expressions.

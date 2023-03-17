@@ -3,7 +3,7 @@ requires = ["maturin>=0.14,<0.15"]
 build-backend = "maturin"
 
 [project]
-name = "regress-py"
+name = "regress"
 description = "Python bindings to Rust's regress ECMA regular expressions library"
 readme = "README.rst"
 license = {text = "MIT"}
