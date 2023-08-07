@@ -11,5 +11,5 @@ crate-type = ["cdylib"]
 regress = "0.6.0"
 
 [dependencies.pyo3]
-version = "0.19.1"
+version = "0.19.2"
 features = ["abi3-py38"]
