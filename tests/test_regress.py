@@ -49,3 +49,12 @@ def test_named_group():
     assert group
 
     assert text[group] == "fox"
+
+
+def test_error_handling():
+    try:
+        regress.Regex(r"(")
+    except regress.RegressError:
+        pass
+    else:
+        assert False, "error not reached"
