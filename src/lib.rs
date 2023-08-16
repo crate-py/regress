@@ -63,9 +63,10 @@ impl MatchPy {
 
 #[pymodule]
 #[pyo3(name = "regress")]
-fn regress_py(_py: Python, m: &PyModule) -> PyResult<()> {
+fn regress_py(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<MatchPy>()?;
     m.add_class::<RegexPy>()?;
+    m.add("RegressError", py.get_type::<RegressError>())?;
     Ok(())
 }
 
