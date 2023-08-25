@@ -29,6 +29,13 @@ classifiers = [
 ]
 dynamic = ["version"]
 
+[project.urls]
+Homepage = "https://github.com/crate-py/regress"
+Issues = "https://github.com/crate-py/regress/issues"
+Funding = "https://github.com/sponsors/Julian"
+Source = "https://github.com/crate-py/regress"
+Upstream = "https://github.com/ridiculousfish/regress"
+
 [tool.isort]
 combine_as_imports = true
 from_first = true
