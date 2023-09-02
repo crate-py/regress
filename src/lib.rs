@@ -20,10 +20,7 @@ impl RegexPy {
     }
 
     fn find(&self, value: &str) -> Option<MatchPy> {
-        match self.inner.find(value) {
-            Some(inner) => Some(MatchPy { inner }),
-            None => None,
-        }
+        self.inner.find(value).map(|inner| MatchPy { inner })
     }
 
     fn find_iter(&self, value: &str) -> Vec<MatchPy> {
