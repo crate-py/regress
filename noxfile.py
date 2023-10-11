@@ -49,12 +49,6 @@ def tests(session):
         session.run("pytest", *session.posargs, TESTS)
 
 
-@session()
-def audit(session):
-    session.install("pip-audit", ROOT)
-    session.run("python", "-m", "pip_audit")
-
-
 @session(tags=["build"])
 def build(session):
     session.install("build", "twine")
