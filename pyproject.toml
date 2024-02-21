@@ -10,8 +10,7 @@ license = {text = "MIT"}
 requires-python = ">=3.8"
 keywords = ["regex", "rust", "javascript", "ecmascript", "regular expressions"]
 authors = [
-  {email = "Julian+regress@GrayVines.com"},
-  {name = "Julian Berman"},
+  { name = "Julian Berman", email = "Julian+regress@GrayVines.com" },
 ]
 classifiers = [
   "Development Status :: 3 - Alpha",
