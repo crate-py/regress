@@ -8,21 +8,27 @@ ROOT = Path(__file__).parent
 TESTS = ROOT / "tests"
 PYPROJECT = ROOT / "pyproject.toml"
 
+SUPPORTED = ["3.8", "3.9", "3.10", "pypy3.10", "3.11", "3.12"]
+LATEST = SUPPORTED[-1]
 
+nox.options.default_venv_backend = "uv|virtualenv"
 nox.options.sessions = []
 
 
-def session(default=True, **kwargs):
+def session(default=True, python=LATEST, **kwargs):  # noqa: D103
     def _session(fn):
         if default:
             nox.options.sessions.append(kwargs.get("name", fn.__name__))
-        return nox.session(**kwargs)(fn)
+        return nox.session(python=python, **kwargs)(fn)
 
     return _session
 
 
-@session(python=["3.8", "3.9", "3.10", "3.11", "3.12", "pypy3"])
+@session(python=SUPPORTED)
 def tests(session):
+    """
+    Run the test suite with a corresponding Python version.
+    """
     session.install(ROOT, "-r", TESTS / "requirements.txt")
 
     if session.posargs and session.posargs[0] == "coverage":
@@ -51,20 +57,10 @@ def tests(session):
 
 @session(tags=["build"])
 def build(session):
+    """
+    Build a distribution suitable for PyPI and check its validity.
+    """
     session.install("build", "twine")
     with TemporaryDirectory() as tmpdir:
         session.run("python", "-m", "build", ROOT, "--outdir", tmpdir)
         session.run("twine", "check", "--strict", tmpdir + "/*")
-
-
-@session(default=False)
-def requirements(session):
-    session.install("pip-tools")
-    for each in [TESTS / "requirements.in"]:
-        session.run(
-            "pip-compile",
-            "--resolver",
-            "backtracking",
-            "-U",
-            each.relative_to(ROOT),
-        )
