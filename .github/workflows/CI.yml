@@ -55,6 +55,8 @@ jobs:
             3.10
             3.11
             3.12
+            3.13
+            pypy3.9
             pypy3.10
           allow-prereleases: true
       - name: Set up uv
@@ -75,18 +77,27 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: |
+            3.8
+            3.9
+            3.10
+            3.11
+            3.12
+            3.13
+            pypy3.9
+            pypy3.10
+          allow-prereleases: true
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter '3.8 3.9 3.10 3.11 3.12 pypy3.8 pypy3.9 pypy3.10'
+          args: --release --out dist --interpreter '3.8 3.9 3.10 3.11 3.12 3.13 pypy3.9 pypy3.10'
           sccache: "true"
           manylinux: auto
       - name: Upload wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: dist-${{ github.job }}-${{ matrix.target }}
           path: dist
 
   musllinux:
@@ -102,18 +113,27 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: |
+            3.8
+            3.9
+            3.10
+            3.11
+            3.12
+            3.13
+            pypy3.9
+            pypy3.10
+          allow-prereleases: true
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter '3.8 3.9 3.10 3.11 3.12 pypy3.8 pypy3.9 pypy3.10'
+          args: --release --out dist --interpreter '3.8 3.9 3.10 3.11 3.12 3.13 pypy3.9 pypy3.10'
           manylinux: musllinux_1_2
           sccache: "true"
       - name: Upload wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: dist-${{ github.job }}-${{ matrix.target }}
           path: dist
 
   windows:
@@ -121,7 +141,7 @@ jobs:
     runs-on: windows-latest
     strategy:
       matrix:
-        target: [x64, x86]
+        target: [x64, x86] # x86 is not supported by pypy
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -132,17 +152,21 @@ jobs:
             3.10
             3.11
             3.12
+            3.13
+            ${{ matrix.target == 'x64' && 'pypy3.9' || '' }}
+            ${{ matrix.target == 'x64' && 'pypy3.10' || '' }}
+          allow-prereleases: true
           architecture: ${{ matrix.target }}
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter '3.8 3.9 3.10 3.11 3.12'
+          args: --release --out dist --interpreter '3.8 3.9 3.10 3.11 3.12 3.13' --interpreter ${{ matrix.target == 'x64' && 'pypy3.9 pypy3.10' || '' }}
           sccache: "true"
       - name: Upload wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: dist-${{ github.job }}-${{ matrix.target }}
           path: dist
 
   macos:
@@ -155,17 +179,26 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.x"
+          python-version: |
+            3.8
+            3.9
+            3.10
+            3.11
+            3.12
+            3.13
+            pypy3.9
+            pypy3.10
+          allow-prereleases: true
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter '3.8 3.9 3.10 3.11 3.12 pypy3.8 pypy3.9 pypy3.10'
+          args: --release --out dist --interpreter '3.8 3.9 3.10 3.11 3.12 3.13 pypy3.9 pypy3.10'
           sccache: "true"
       - name: Upload wheels
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: dist-${{ github.job }}-${{ matrix.target }}
           path: dist
 
   sdist:
@@ -173,15 +206,27 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: |
+            3.8
+            3.9
+            3.10
+            3.11
+            3.12
+            3.13
+            pypy3.9
+            pypy3.10
+          allow-prereleases: true
       - name: Build an sdist
         uses: PyO3/maturin-action@v1
         with:
           command: sdist
           args: --out dist
       - name: Upload sdist
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
-          name: wheels
+          name: dist-${{ github.job }}
           path: dist
 
   release:
@@ -198,12 +243,13 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          name: wheels
+          pattern: dist-*
+          merge-multiple: true
       - name: Publish to PyPI
         uses: PyO3/maturin-action@v1
         with:
           command: upload
-          args: --skip-existing *
+          args: --non-interactive --skip-existing *
       - name: Create a GitHub Release
         if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
         uses: softprops/action-gh-release@v2
