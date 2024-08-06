@@ -23,7 +23,7 @@ repos:
     hooks:
       - id: fmt
       - id: clippy
-        args: [--fix]
+        args: [--fix, --allow-staged]
   - repo: https://github.com/PyCQA/isort
     rev: 5.13.2
     hooks:
