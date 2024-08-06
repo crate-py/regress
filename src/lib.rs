@@ -60,13 +60,13 @@ impl MatchPy {
 
 #[pymodule]
 #[pyo3(name = "regress")]
-fn regress_py(py: Python, m: &PyModule) -> PyResult<()> {
+fn regress_py(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<MatchPy>()?;
     m.add_class::<RegexPy>()?;
-    m.add("RegressError", py.get_type::<RegressError>())?;
+    m.add("RegressError", py.get_type_bound::<RegressError>())?;
     Ok(())
 }
 
 fn to_slice(py: Python, range: Range) -> PyResult<PyObject> {
-    Ok(PySlice::new(py, range.start.try_into()?, range.end.try_into()?, 1).into())
+    Ok(PySlice::new_bound(py, range.start.try_into()?, range.end.try_into()?, 1).into())
 }

@@ -1,6 +1,6 @@
 [package]
 name = "regress-py"
-version = "0.4.5"
+version = "0.5.0"
 edition = "2021"
 
 [lib]
@@ -8,8 +8,10 @@ name = "regress"
 crate-type = ["cdylib"]
 
 [dependencies]
-regress = "0.7.0"
+regress = "0.10.0"
 
 [dependencies.pyo3]
-version = "0.21.2"
-features = ["extension-module"]
+version = "0.22.2"
+# To build extension for PyPy on Windows, "generate-import-lib" is needed:
+# https://github.com/PyO3/maturin-action/issues/267#issuecomment-2106844429
+features = ["extension-module", "generate-import-lib"]
