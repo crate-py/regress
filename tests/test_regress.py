@@ -1,3 +1,5 @@
+import pytest
+
 import regress
 
 
@@ -57,4 +59,4 @@ def test_error_handling():
     except regress.RegressError:
         pass
     else:
-        assert False, "error not reached"
+        pytest.fail("error not reached")
