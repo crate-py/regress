@@ -60,3 +60,16 @@ def test_error_handling():
         pass
     else:
         pytest.fail("error not reached")
+
+
+def test_with_flags():
+    # "L" for letters, "Z" for spaces, "N" for numerics
+    pattern = r"^\p{L}\p{Z}\p{N}$"
+
+    regex = regress.Regex(pattern, flags="u")
+    flagless_regex = regress.Regex(pattern)
+
+    match = regex.find("a 0")
+    flagless_match = flagless_regex.find("a 0")
+    assert match is not None
+    assert flagless_match is None
