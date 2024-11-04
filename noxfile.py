@@ -29,7 +29,13 @@ def tests(session):
     """
     Run the test suite with a corresponding Python version.
     """
-    session.install(ROOT, "-r", TESTS / "requirements.txt")
+    session.install(
+        "--config-settings",
+        "build-args=--profile=dev",
+        "--no-cache",
+        "-r",
+        REQUIREMENTS["tests"],
+    )
 
     if session.posargs and session.posargs[0] == "coverage":
         if len(session.posargs) > 1 and session.posargs[1] == "github":
