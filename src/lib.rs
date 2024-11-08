@@ -12,10 +12,17 @@ struct RegexPy {
 #[pymethods]
 impl RegexPy {
     #[new]
-    fn init(value: &str) -> PyResult<Self> {
-        match Regex::new(value) {
-            Ok(inner) => Ok(RegexPy { inner }),
-            Err(e) => Err(RegressError::new_err(e.to_string())),
+    #[pyo3(signature = (value, flags=None))]
+    fn init(value: &str, flags: Option<&str>) -> PyResult<Self> {
+        match flags {
+            Some(f) => match Regex::with_flags(value, f) {
+                Ok(inner) => Ok(RegexPy { inner }),
+                Err(e) => Err(RegressError::new_err(e.to_string())),
+            },
+            None => match Regex::new(value) {
+                Ok(inner) => Ok(RegexPy { inner }),
+                Err(e) => Err(RegressError::new_err(e.to_string())),
+            },
         }
     }
 
