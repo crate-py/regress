@@ -193,7 +193,7 @@ dependencies = [
 
 [[package]]
 name = "regress-py"
-version = "2025.5.1"
+version = "2025.7.1"
 dependencies = [
  "pyo3",
  "regress",
