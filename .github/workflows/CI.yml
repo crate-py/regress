@@ -5,12 +5,14 @@ on:
     branches-ignore:
       - "wip*"
     tags:
-      - "v*"
+      - "v[0-9].*"
   pull_request:
   schedule:
     # Daily at 6:33
     - cron: "33 6 * * *"
   workflow_dispatch:
+
+permissions: {}
 
 jobs:
   list:
@@ -21,12 +23,13 @@ jobs:
       - uses: actions/checkout@v4
         with:
           persist-credentials: false
-      - name: Set up nox
-        uses: wntrblm/nox@2025.02.09
+      - uses: astral-sh/setup-uv@bd01e18f51369d5a26f1651c3cb451d3417e3bba
+        with:
+          enable-cache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
       - id: noxenvs-matrix
         run: |
           echo >>$GITHUB_OUTPUT noxenvs=$(
-            nox --list-sessions --json | jq '[.[].session]'
+            uvx nox --list-sessions --json | jq '[.[].session]'
           )
 
   test:
@@ -57,26 +60,29 @@ jobs:
             3.11
             3.12
             3.13
+            3.13t
             3.14
+            3.14t
             pypy3.9
             pypy3.10
             pypy3.11
           allow-prereleases: true
 
-      - name: Set up uv
-        uses: hynek/setup-cached-uv@v2
-      - name: Set up nox
-        uses: wntrblm/nox@2025.02.09
-
+      - uses: astral-sh/setup-uv@bd01e18f51369d5a26f1651c3cb451d3417e3bba
+        with:
+          enable-cache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
       - name: Run nox
-        run: nox -s "${{ matrix.noxenv }}"
+        run: uvx nox -s "${{ matrix.noxenv }}" -- ${{ matrix.posargs }} # zizmor: ignore[template-injection]
 
   manylinux:
     needs: test
     runs-on: ubuntu-latest
+
     strategy:
+      fail-fast: false
       matrix:
         target: [x86_64, x86, aarch64, armv7, s390x, ppc64le]
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -89,17 +95,19 @@ jobs:
             3.11
             3.12
             3.13
+            3.13t
             3.14
+            3.14t
             pypy3.9
             pypy3.10
             pypy3.11
           allow-prereleases: true
       - name: Build wheels
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@e10f6c464b90acceb5f640d31beda6d586ba7b4a # v1.49.3
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter '3.9 3.10 3.11 3.12 3.13 3.14 pypy3.9 pypy3.10 pypy3.11'
-          sccache: "true"
+          args: --release --out dist --interpreter '3.9 3.10 3.11 3.12 3.13 3.13t 3.14 3.14t pypy3.9 pypy3.10 pypy3.11'
+          sccache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
           manylinux: auto
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -110,12 +118,15 @@ jobs:
   musllinux:
     needs: test
     runs-on: ubuntu-latest
+
     strategy:
+      fail-fast: false
       matrix:
         target:
           - aarch64-unknown-linux-musl
           - i686-unknown-linux-musl
           - x86_64-unknown-linux-musl
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -128,18 +139,20 @@ jobs:
             3.11
             3.12
             3.13
+            3.13t
             3.14
+            3.14t
             pypy3.9
             pypy3.10
             pypy3.11
           allow-prereleases: true
       - name: Build wheels
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@e10f6c464b90acceb5f640d31beda6d586ba7b4a # v1.49.3
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter '3.9 3.10 3.11 3.12 3.13 3.14 pypy3.9 pypy3.10 pypy3.11'
+          args: --release --out dist --interpreter '3.9 3.10 3.11 3.12 3.13 3.13t 3.14 3.14t pypy3.9 pypy3.10 pypy3.11'
           manylinux: musllinux_1_2
-          sccache: "true"
+          sccache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -149,9 +162,12 @@ jobs:
   windows:
     needs: test
     runs-on: windows-latest
+
     strategy:
+      fail-fast: false
       matrix:
         target: [x64, x86] # x86 is not supported by pypy
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -171,23 +187,118 @@ jobs:
           allow-prereleases: true
           architecture: ${{ matrix.target }}
       - name: Build wheels
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@e10f6c464b90acceb5f640d31beda6d586ba7b4a # v1.49.3
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter '3.9 3.10 3.11 3.12 3.13 3.14' --interpreter ${{ matrix.target == 'x64' && 'pypy3.9 pypy3.10 pypy3.11' || '' }}
-          sccache: "true"
+          args: --release --out dist --interpreter '3.9 3.10 3.11 3.12 3.13 3.14' --interpreter ${{ matrix.target == 'x64' && 'pypy3.9 pypy3.10' || '' }}
+          sccache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
           name: dist-${{ github.job }}-${{ matrix.target }}
           path: dist
 
+  windows-arm:
+    needs: test
+    runs-on: windows-11-arm
+
+    strategy:
+      fail-fast: false
+      matrix:
+        target:
+          - aarch64-pc-windows-msvc
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      # Install each python version seperatly so that the paths can be passed to maturin. (otherwise finds pre-installed x64 versions)
+      - uses: actions/setup-python@v5
+        id: cp311
+        with:
+          python-version: 3.11
+          allow-prereleases: true
+          architecture: arm64
+      - uses: actions/setup-python@v5
+        id: cp312
+        with:
+          python-version: 3.12
+          allow-prereleases: true
+          architecture: arm64
+      - uses: actions/setup-python@v5
+        id: cp313
+        with:
+          python-version: 3.13
+          allow-prereleases: true
+          architecture: arm64
+      - uses: actions/setup-python@v5
+        id: cp314
+        with:
+          python-version: 3.14
+          allow-prereleases: true
+          architecture: arm64
+      # rust toolchain is not currently installed on windopws arm64 images: https://github.com/actions/partner-runner-images/issues/77
+      - name: Setup rust
+        id: setup-rust
+        run: |
+          Invoke-WebRequest https://static.rust-lang.org/rustup/dist/aarch64-pc-windows-msvc/rustup-init.exe -OutFile .\rustup-init.exe
+          .\rustup-init.exe -y
+          Add-Content $env:GITHUB_PATH "$env:USERPROFILE\.cargo\bin"
+      - name: Build wheels
+        uses: PyO3/maturin-action@e10f6c464b90acceb5f640d31beda6d586ba7b4a # v1.49.3
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out dist --interpreter ${{ steps.cp311.outputs.python-path }} ${{ steps.cp312.outputs.python-path }} ${{ steps.cp313.outputs.python-path }} ${{ steps.cp314.outputs.python-path }}
+          sccache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.job }}-${{ matrix.target }}
+          path: dist
+
+  # free-threaded and normal builds share a site-packages folder on Windows so
+  # we must build free-threaded separately
+  windows-free-threaded:
+    needs: test
+    runs-on: windows-latest
+
+    strategy:
+      fail-fast: false
+      matrix:
+        target: [x64, x86] # x86 is not supported by pypy
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: |
+            3.13t
+            3.14t
+          allow-prereleases: true
+          architecture: ${{ matrix.target }}
+      - name: Build wheels
+        uses: PyO3/maturin-action@e10f6c464b90acceb5f640d31beda6d586ba7b4a # v1.49.3
+        with:
+          target: ${{ matrix.target }}
+          args: --release --out dist --interpreter '3.13t 3.14t'
+          sccache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist-${{ github.job }}-${{ matrix.target }}-free-threaded
+          path: dist
+
   macos:
     needs: test
     runs-on: macos-latest
+
     strategy:
+      fail-fast: false
       matrix:
         target: [x86_64, aarch64]
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -200,17 +311,19 @@ jobs:
             3.11
             3.12
             3.13
+            3.13t
             3.14
+            3.14t
             pypy3.9
             pypy3.10
             pypy3.11
           allow-prereleases: true
       - name: Build wheels
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@e10f6c464b90acceb5f640d31beda6d586ba7b4a # v1.49.3
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter '3.9 3.10 3.11 3.12 3.13 3.14 pypy3.9 pypy3.10 pypy3.11'
-          sccache: "true"
+          args: --release --out dist --interpreter '3.9 3.10 3.11 3.12 3.13 3.13t 3.14 3.14t pypy3.9 pypy3.10 pypy3.11'
+          sccache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -226,19 +339,9 @@ jobs:
           persist-credentials: false
       - uses: actions/setup-python@v5
         with:
-          python-version: |
-            3.9
-            3.10
-            3.11
-            3.12
-            3.13
-            3.14
-            pypy3.9
-            pypy3.10
-            pypy3.11
-          allow-prereleases: true
+          python-version: 3.13
       - name: Build an sdist
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@e10f6c464b90acceb5f640d31beda6d586ba7b4a # v1.49.3
         with:
           command: sdist
           args: --out dist
@@ -249,7 +352,8 @@ jobs:
           path: dist
 
   release:
-    needs: [manylinux, musllinux, windows, macos]
+    needs:
+      [manylinux, musllinux, windows, windows-arm, windows-free-threaded, macos]
     runs-on: ubuntu-latest
     if: "startsWith(github.ref, 'refs/tags/')"
     environment:
@@ -265,13 +369,13 @@ jobs:
           pattern: dist-*
           merge-multiple: true
       - name: Publish to PyPI
-        uses: PyO3/maturin-action@v1
+        uses: PyO3/maturin-action@e10f6c464b90acceb5f640d31beda6d586ba7b4a # v1.49.3
         with:
           command: upload
           args: --non-interactive --skip-existing *
       - name: Create a GitHub Release
         if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@72f2c25fcb47643c292f7107632f7a47c1df5cd8
         with:
           files: |
             *
