@@ -1,4 +1,4 @@
-use pyo3::{create_exception, prelude::*, types::PySlice};
+use pyo3::{create_exception, prelude::*, types::{PyAny, PySlice}};
 use regress::{Match, Range, Regex};
 
 create_exception!(regress, RegressError, pyo3::exceptions::PyException);
@@ -46,21 +46,21 @@ struct MatchPy {
 
 #[pymethods]
 impl MatchPy {
-    fn group(&self, idx: usize, py: Python) -> PyResult<Option<PyObject>> {
+    fn group(&self, idx: usize, py: Python) -> PyResult<Option<Py<PyAny>>> {
         match self.inner.group(idx) {
             Some(m) => Ok(Some(to_slice(py, m)?)),
             None => Ok(None),
         }
     }
 
-    fn named_group(&self, name: &str, py: Python) -> PyResult<Option<PyObject>> {
+    fn named_group(&self, name: &str, py: Python) -> PyResult<Option<Py<PyAny>>> {
         match self.inner.named_group(name) {
             Some(m) => Ok(Some(to_slice(py, m)?)),
             None => Ok(None),
         }
     }
 
-    fn range(&self, py: Python) -> PyResult<PyObject> {
+    fn range(&self, py: Python) -> PyResult<Py<PyAny>> {
         to_slice(py, self.inner.range())
     }
 }
@@ -74,6 +74,6 @@ fn regress_py(py: Python, m: &Bound<'_, PyModule>) -> PyResult<()> {
     Ok(())
 }
 
-fn to_slice(py: Python, range: Range) -> PyResult<PyObject> {
+fn to_slice(py: Python, range: Range) -> PyResult<Py<PyAny>> {
     Ok(PySlice::new(py, range.start.try_into()?, range.end.try_into()?, 1).into())
 }
