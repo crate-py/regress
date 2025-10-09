@@ -5,7 +5,7 @@ build-backend = "maturin"
 [project]
 name = "regress"
 description = "Python bindings to Rust's regress ECMA regular expressions library"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 readme = "README.rst"
 keywords = ["regex", "rust", "javascript", "ecmascript", "regular expressions"]
 authors = [
@@ -17,7 +17,6 @@ classifiers = [
   "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Rust",
-  "Programming Language :: Python :: 3.9",
   "Programming Language :: Python :: 3.10",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
@@ -93,7 +92,6 @@ ignore = [
   "SIM300", # Not sure what heuristic this uses, but it's easily incorrect
   "SLF001",  # Private usage within this package itself is fine
   "TD",  # These TODO style rules are also silly
-  "UP007",  # We support 3.9
 ]
 
 [tool.ruff.lint.flake8-pytest-style]
