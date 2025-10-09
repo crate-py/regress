@@ -1,6 +1,6 @@
 [package]
 name = "regress-py"
-version = "2025.7.1"
+version = "2025.10.1"
 edition = "2021"
 
 [lib]
