@@ -7,6 +7,8 @@ name = "regress"
 description = "Python bindings to Rust's regress ECMA regular expressions library"
 requires-python = ">=3.10"
 readme = "README.rst"
+license = "MIT"
+license-files = ["LICENSE"]
 keywords = ["regex", "rust", "javascript", "ecmascript", "regular expressions"]
 authors = [
   { name = "Julian Berman", email = "Julian+regress@GrayVines.com" },
@@ -14,7 +16,6 @@ authors = [
 classifiers = [
   "Development Status :: 4 - Beta",
   "Intended Audience :: Developers",
-  "License :: OSI Approved :: MIT License",
   "Operating System :: OS Independent",
   "Programming Language :: Rust",
   "Programming Language :: Python :: 3.10",
@@ -55,6 +56,7 @@ ignore = [
   "A001",  # It's fine to shadow builtins
   "A002",
   "A003",
+  "A005",
   "ARG",  # This is all wrong whenever an interface is involved
   "ANN",  # Just let the type checker do this
   "B006",  # Mutable arguments require care but are OK if you don't abuse them
