@@ -16,60 +16,54 @@ permissions: {}
 
 jobs:
   list:
+    name: List nox sessions
     runs-on: ubuntu-latest
     outputs:
       noxenvs: ${{ steps.noxenvs-matrix.outputs.noxenvs }}
     steps:
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           enable-cache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
       - id: noxenvs-matrix
         run: |
           echo >>$GITHUB_OUTPUT noxenvs=$(
-            uvx nox --list-sessions --json | jq '[.[].session]'
+            uvx nox --list-sessions --json | jq '[.[] | {session, python}]'
           )
 
   test:
+    name: Run ${{ matrix.session }}
     needs: list
     runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
       matrix:
-        noxenv: ${{ fromJson(needs.list.outputs.noxenvs) }}
+        include: ${{ fromJson(needs.list.outputs.noxenvs) }}
 
     steps:
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
       - name: Install dependencies
         run: sudo apt-get update && sudo apt-get install -y libenchant-2-dev
-        if: runner.os == 'Linux' && startsWith(matrix.noxenv, 'docs')
+        if: runner.os == 'Linux' && startsWith(matrix.session, 'docs')
       - name: Install dependencies
         run: brew install enchant
-        if: runner.os == 'macOS' && startsWith(matrix.noxenv, 'docs')
+        if: runner.os == 'macOS' && startsWith(matrix.session, 'docs')
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
-          python-version: |
-            3.10
-            3.11
-            3.12
-            3.13
-            3.13t
-            3.14
-            3.14t
-            pypy3.11
+          python-version: ${{ matrix.python }}
           allow-prereleases: true
 
-      - uses: astral-sh/setup-uv@08807647e7069bb48b6ef5acd8ec9567f424441b
+      - uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
         with:
           enable-cache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
       - name: Run nox
-        run: uvx nox -s "${{ matrix.noxenv }}" -- ${{ matrix.posargs }} # zizmor: ignore[template-injection]
+        run: uvx nox -s "${{ matrix.session }}" # zizmor: ignore[template-injection]
 
   manylinux:
     needs: test
@@ -90,30 +84,30 @@ jobs:
           ]
 
     steps:
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: |
-            3.10
             3.11
             3.12
             3.13
-            3.13t
             3.14
             3.14t
+            3.15
+            3.15t
             pypy3.11
           allow-prereleases: true
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter '3.10 3.11 3.12 3.13 3.13t 3.14 3.14t pypy3.11'
+          args: --release --out dist --interpreter '3.11 3.12 3.13 3.14 3.14t 3.15 3.15t pypy3.11'
           sccache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
           manylinux: auto
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist-${{ github.job }}-${{ matrix.target }}
           path: dist
@@ -131,30 +125,30 @@ jobs:
           - x86_64-unknown-linux-musl
 
     steps:
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: |
-            3.10
             3.11
             3.12
             3.13
-            3.13t
             3.14
             3.14t
+            3.15
+            3.15t
             pypy3.11
           allow-prereleases: true
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter '3.10 3.11 3.12 3.13 3.13t 3.14 3.14t pypy3.11'
+          args: --release --out dist --interpreter '3.11 3.12 3.13 3.14 3.14t 3.15 3.15t pypy3.11'
           manylinux: musllinux_1_2
           sccache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist-${{ github.job }}-${{ matrix.target }}
           path: dist
@@ -169,17 +163,17 @@ jobs:
         target: [x64, x86] # x86 is not supported by pypy
 
     steps:
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: |
-            3.10
             3.11
             3.12
             3.13
             3.14
+            3.15
             ${{ matrix.target == 'x64' && 'pypy3.11' || '' }}
           allow-prereleases: true
           architecture: ${{ matrix.target }}
@@ -187,10 +181,10 @@ jobs:
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter '3.10 3.11 3.12 3.13 3.14'
+          args: --release --out dist --interpreter '3.11 3.12 3.13 3.14 3.15'
           sccache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist-${{ github.job }}-${{ matrix.target }}
           path: dist
@@ -206,32 +200,38 @@ jobs:
           - aarch64-pc-windows-msvc
 
     steps:
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
       # Install each python version seperatly so that the paths can be passed to maturin. (otherwise finds pre-installed x64 versions)
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         id: cp311
         with:
           python-version: 3.11
           allow-prereleases: true
           architecture: arm64
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         id: cp312
         with:
           python-version: 3.12
           allow-prereleases: true
           architecture: arm64
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         id: cp313
         with:
           python-version: 3.13
           allow-prereleases: true
           architecture: arm64
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         id: cp314
         with:
           python-version: 3.14
+          allow-prereleases: true
+          architecture: arm64
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        id: cp315
+        with:
+          python-version: 3.15
           allow-prereleases: true
           architecture: arm64
       # rust toolchain is not currently installed on windopws arm64 images: https://github.com/actions/partner-runner-images/issues/77
@@ -245,10 +245,10 @@ jobs:
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter ${{ steps.cp311.outputs.python-path }} ${{ steps.cp312.outputs.python-path }} ${{ steps.cp313.outputs.python-path }} ${{ steps.cp314.outputs.python-path }}
+          args: --release --out dist --interpreter ${{ steps.cp311.outputs.python-path }} ${{ steps.cp312.outputs.python-path }} ${{ steps.cp313.outputs.python-path }} ${{ steps.cp314.outputs.python-path }} ${{ steps.cp315.outputs.python-path }}
           sccache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist-${{ github.job }}-${{ matrix.target }}
           path: dist
@@ -265,24 +265,24 @@ jobs:
         target: [x64, x86] # x86 is not supported by pypy
 
     steps:
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: |
-            3.13t
             3.14t
+            3.15t
           allow-prereleases: true
           architecture: ${{ matrix.target }}
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter '3.13t 3.14t'
+          args: --release --out dist --interpreter '3.14t 3.15t'
           sccache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist-${{ github.job }}-${{ matrix.target }}-free-threaded
           path: dist
@@ -297,29 +297,29 @@ jobs:
         target: [x86_64, aarch64]
 
     steps:
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: |
-            3.10
             3.11
             3.12
             3.13
-            3.13t
             3.14
             3.14t
+            3.15
+            3.15t
             pypy3.11
           allow-prereleases: true
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.target }}
-          args: --release --out dist --interpreter '3.10 3.11 3.12 3.13 3.13t 3.14 3.14t pypy3.11'
+          args: --release --out dist --interpreter '3.11 3.12 3.13 3.14 3.14t 3.15 3.15t pypy3.11'
           sccache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
       - name: Upload wheels
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist-${{ github.job }}-${{ matrix.target }}
           path: dist
@@ -328,10 +328,10 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           persist-credentials: false
-      - uses: actions/setup-python@v6
+      - uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: 3.13
       - name: Build an sdist
@@ -340,7 +340,7 @@ jobs:
           command: sdist
           args: --out dist
       - name: Upload sdist
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: dist-${{ github.job }}
           path: dist
@@ -358,7 +358,7 @@ jobs:
       id-token: write
 
     steps:
-      - uses: actions/download-artifact@v7
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
           pattern: dist-*
           merge-multiple: true
@@ -371,8 +371,7 @@ jobs:
           packages-dir: dist
       - name: Create a GitHub Release
         if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags')
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b
-        with:
-          files: |
-            dist/*
-          generate_release_notes: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ github.ref_name }}
+        run: gh release create "$TAG" --repo "$GITHUB_REPOSITORY" --generate-notes dist/*
