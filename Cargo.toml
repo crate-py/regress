@@ -8,7 +8,7 @@ name = "regress"
 crate-type = ["cdylib"]
 
 [dependencies]
-regress = "0.11.1"
+regress = "0.12.0"
 
 [dependencies.pyo3]
 version = "0.29.1"
