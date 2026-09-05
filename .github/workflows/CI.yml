@@ -14,6 +14,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/') }}
+
 jobs:
   list:
     name: List nox sessions
@@ -24,7 +28,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           enable-cache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
       - id: noxenvs-matrix
@@ -34,7 +38,7 @@ jobs:
           )
 
   test:
-    name: Run ${{ matrix.session }}
+    name: Test (${{ matrix.session }})
     needs: list
     runs-on: ubuntu-latest
 
@@ -59,13 +63,14 @@ jobs:
           python-version: ${{ matrix.python }}
           allow-prereleases: true
 
-      - uses: astral-sh/setup-uv@11f9893b081a58869d3b5fccaea48c9e9e46f990 # v8.3.2
+      - uses: astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d # v10.0.1
         with:
           enable-cache: ${{ github.ref_type != 'tag' }} # zizmor: ignore[cache-poisoning]
       - name: Run nox
         run: uvx nox -s "${{ matrix.session }}" # zizmor: ignore[template-injection]
 
   manylinux:
+    name: Build manylinux wheels
     needs: test
     runs-on: ubuntu-latest
 
@@ -113,6 +118,7 @@ jobs:
           path: dist
 
   musllinux:
+    name: Build musllinux wheels
     needs: test
     runs-on: ubuntu-latest
 
@@ -154,6 +160,7 @@ jobs:
           path: dist
 
   windows:
+    name: Build Windows wheels
     needs: test
     runs-on: windows-latest
 
@@ -190,6 +197,7 @@ jobs:
           path: dist
 
   windows-arm:
+    name: Build Windows ARM wheels
     needs: test
     runs-on: windows-11-arm
 
@@ -256,6 +264,7 @@ jobs:
   # free-threaded and normal builds share a site-packages folder on Windows so
   # we must build free-threaded separately
   windows-free-threaded:
+    name: Build Windows free-threaded wheels
     needs: test
     runs-on: windows-latest
 
@@ -288,6 +297,7 @@ jobs:
           path: dist
 
   macos:
+    name: Build macOS wheels
     needs: test
     runs-on: macos-latest
 
@@ -325,6 +335,7 @@ jobs:
           path: dist
 
   sdist:
+    name: Build sdist
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -346,6 +357,7 @@ jobs:
           path: dist
 
   release:
+    name: Publish release
     needs:
       [manylinux, musllinux, windows, windows-arm, windows-free-threaded, macos]
     runs-on: ubuntu-latest
@@ -354,8 +366,8 @@ jobs:
       name: PyPI
       url: https://pypi.org/p/regress
     permissions:
-      contents: write
-      id-token: write
+      contents: write # needed to create the GitHub Release
+      id-token: write # needed for trusted publishing to PyPI
 
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
